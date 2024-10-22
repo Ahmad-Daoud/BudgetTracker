@@ -1,0 +1,6 @@
+{
+  "_comment" : "Make sure to have a sql login in order to connect to the database using name and password, and then remove .example from the extension of this file",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=your_server_name;Database=your_database_name;User Id=your_username;Password=your_password;"
+  }
+}

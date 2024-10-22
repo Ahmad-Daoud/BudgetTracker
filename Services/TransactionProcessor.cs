@@ -45,12 +45,17 @@ namespace BudgetTracker.Services
         {
             // This method will send transactions  to mssql database
             string query = $"INSERT INTO Transactions (Amount, UserId, TransactionDate, CategoryId, BankId) " +
-                           $"VALUES ('{transaction.Amount}', '{transaction.UserId}', '{transaction.Date}', '{transaction.CategoryId}', '{transaction.BankId}')";
+                           $"VALUES (@Amount, @UserId,@TransactionDate, @CategoryId, @BankId)";
             try
             {
                 await OpenConnection();
                 using (SqlCommand command = new SqlCommand(query, _connection))
                 {
+                    command.Parameters.AddWithValue("@Amount", transaction.Amount);
+                    command.Parameters.AddWithValue("@UserId", transaction.UserId);
+                    command.Parameters.AddWithValue("@TransactionDate", transaction.Date);
+                    command.Parameters.AddWithValue("@CategoryId", transaction.CategoryId);
+                    command.Parameters.AddWithValue("@BankId", transaction.BankId);
                     await command.ExecuteNonQueryAsync();
                     Console.Clear();
                     Console.WriteLine("Added transaction!");
@@ -185,11 +190,11 @@ namespace BudgetTracker.Services
             }
             return retCategories;
         }
-        public async Task<List<Models.Transaction>> GetTransactions()
+        public async Task<List<Models.Transaction>> GetTransactions(int userId)
         {
             // This method will get transactions from mssql database
             List<Models.Transaction> retTransactions = new List<Models.Transaction>();
-            string query = "SELECT * FROM Transactions";
+            string query = $"SELECT * FROM Transactions WHERE UserId = {userId}";
             try
             {
                 await OpenConnection();
@@ -203,11 +208,11 @@ namespace BudgetTracker.Services
                             Console.WriteLine("hello1");
                             int id = reader.GetInt32(0);
                             decimal amount = reader.GetDecimal(1);
-                            int userId = reader.GetInt32(2);
+                            int uid = reader.GetInt32(2);
                             DateTime date = reader.GetDateTime(3);
                             int categoryId = reader.GetInt32(2); 
                             int bankId = reader.GetInt32(4);
-                            retTransactions.Add(new Models.Transaction(id, userId ,amount, date, categoryId, bankId));
+                            retTransactions.Add(new Models.Transaction(id, uid ,amount, date, categoryId, bankId));
                         }
                     }
                 }
@@ -256,7 +261,7 @@ namespace BudgetTracker.Services
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build(); 
+                .Build();
              
             return configuration.GetConnectionString("DefaultConnection");
         }
