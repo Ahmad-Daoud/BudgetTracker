@@ -65,6 +65,57 @@ namespace BudgetTracker.Services
                 CloseConnection();
             }
         }
+        public async Task ModifyTransaction(Models.Transaction transaction, int id)
+        {
+            // This method will modify transactions in mssql database
+            string query = $"UPDATE Transactions SET Amount = '{transaction.Amount}', UserId = '{transaction.UserId}', TransactionDate = '{transaction.Date}', CategoryId = '{transaction.CategoryId}', BankId = '{transaction.BankId}' WHERE Id = '{id}'";
+            try
+            {
+                await OpenConnection();
+                using (SqlCommand command = new SqlCommand(query, _connection))
+                {
+                    await command.ExecuteNonQueryAsync();
+                    Console.Clear();
+                    Console.WriteLine("Modified transaction!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while modifying transaction in the database : " + ex);
+            }
+            finally
+            {
+                CloseConnection();
+            }
+        }
+        public async Task<bool> RemoveTransaction(int id)
+        {
+            // This method will remove a transaction based on it's id from mssql database
+            string query = $"DELETE FROM Transactions WHERE Id = '{id}'";
+            try
+            {
+                await OpenConnection();
+                using (SqlCommand command = new SqlCommand(query, _connection))
+                {
+                    var returned = await command.ExecuteNonQueryAsync();
+                    if(returned == 0)
+                    {
+                        CloseConnection();
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while removing transaction from the database : " + ex);
+                return false;
+            }
+            finally
+            {
+                CloseConnection();
+            }
+            return true;
+        }
         public async Task<int> GetCategoryIdOrCreate(string name)
         {
             int returnId = 0;
@@ -146,10 +197,17 @@ namespace BudgetTracker.Services
                 {
                     using (SqlDataReader reader = await command.ExecuteReaderAsync())
                     {
+                        Console.WriteLine("hello0");
                         while (await reader.ReadAsync())
                         {
-                            // This line is probably wrong
-                            retTransactions.Add(new Models.Transaction(reader.GetInt32(1), reader.GetDecimal(2), reader.GetDateTime(3), reader.GetInt32(4),reader.GetInt32(5)));
+                            Console.WriteLine("hello1");
+                            int id = reader.GetInt32(0);
+                            decimal amount = reader.GetDecimal(1);
+                            int userId = reader.GetInt32(2);
+                            DateTime date = reader.GetDateTime(3);
+                            int categoryId = reader.GetInt32(2); 
+                            int bankId = reader.GetInt32(4);
+                            retTransactions.Add(new Models.Transaction(id, userId ,amount, date, categoryId, bankId));
                         }
                     }
                 }
