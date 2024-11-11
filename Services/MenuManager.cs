@@ -68,7 +68,31 @@ namespace BudgetTracker.Services
         public async Task AddTransaction()
         {
             Console.WriteLine("Add a transaction! \n Choose your transaction amount : ");
-            decimal amount = Convert.ToDecimal(Console.ReadLine());
+            decimal amount;
+            while (true)
+            {
+                var resp = Console.ReadLine();
+                // Check if it's all digits. It also might contain a full stop / comma
+                if (resp != null && (resp.All(char.IsDigit) || resp.Contains(".") || resp.Contains(",")))
+                {
+                    // Convert response to a digit
+                    try
+                    {
+                        amount = Convert.ToDecimal(resp);
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Invalid input. Please try again");
+                        Console.Clear();
+                    }
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("Invalid input. Please try again");
+                }
+            }
             Console.WriteLine("Choose id of one of your banks : ");
             var banks = await transactionProcessor.GetUserBank();
             foreach (var bank in banks)
@@ -114,9 +138,29 @@ namespace BudgetTracker.Services
         }
         public async Task RemoveTransaction()
         {
-            Console.WriteLine("Please enter the transaction id you wish to remove");
-            string? input = Console.ReadLine();
-            if (input != null)
+            string? input;
+            bool quit = false;
+            while (true)
+            {
+                Console.WriteLine("Please enter the transaction id you wish to remove or q to quit");
+                input = Console.ReadLine();
+                // Make sure the input is a number
+                if (input == "q" )
+                {
+                    quit = true;
+                    break;
+                }
+                else if(input != null && input != "" && input.All(char.IsDigit))
+                {
+                    break;
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("Invalid input. Please try again");
+                }
+            }
+            if (quit != true && input != null)
             {
                 bool response = await transactionProcessor.RemoveTransaction(Convert.ToInt32(input));
                 if (response)
@@ -130,11 +174,11 @@ namespace BudgetTracker.Services
                     await RemoveTransaction();
                 }
             }
-            else
+            else if (quit != true)
             {
                 throw new ArgumentNullException(nameof(input));
             }
-
+            Console.Clear();
         }
     }
 }

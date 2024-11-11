@@ -197,10 +197,8 @@ namespace BudgetTracker.Services
                 {
                     using (SqlDataReader reader = await command.ExecuteReaderAsync())
                     {
-                        Console.WriteLine("hello0");
                         while (await reader.ReadAsync())
                         {
-                            Console.WriteLine("hello1");
                             int id = reader.GetInt32(0);
                             decimal amount = reader.GetDecimal(1);
                             int userId = reader.GetInt32(2);
