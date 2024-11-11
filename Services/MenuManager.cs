@@ -55,11 +55,10 @@ namespace BudgetTracker.Services
             var transactions = await transactionProcessor.GetTransactions(1);
             Console.Clear();
             Console.WriteLine("Here are the transactions in the database : \n");
-            int x = 0;
             foreach (var transaction in transactions)
             {
-                x++;
-                Console.WriteLine($"{x} - Transaction Amount: {transaction.Amount} {transaction.Date.ToString("d")}");
+                string catName = await transactionProcessor.GetCategoryNameById(transaction.CategoryId);
+                Console.WriteLine($"{transaction.Id} - Transaction Amount: {transaction.Amount} {transaction.Date.ToString("d")} , Category : {catName}");
             }
 
             Console.WriteLine("Press any key to quit");
@@ -84,8 +83,8 @@ namespace BudgetTracker.Services
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine("Invalid input. Please try again");
                         Console.Clear();
+                        Console.WriteLine("Invalid input. Please try again");
                     }
                 }
                 else
@@ -135,7 +134,66 @@ namespace BudgetTracker.Services
         }
         public async Task ModifyTransaction()
         {
-            Console.WriteLine("Transaction modification function");
+            string? input;
+            bool quit = false;
+            while (true)
+            {
+                Console.WriteLine("Please enter the transaction id you wish to modify or q to quit");
+                input = Console.ReadLine();
+                if (input == "q")
+                {
+                    quit = true;
+                    break;
+                }
+                else if (input != null && input != "" && input.All(char.IsDigit))
+                {
+                    if (await transactionProcessor.TransactionExists(Convert.ToInt32(input)) == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Transaction not found. Please try again");
+                    }
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("Invalid input. Please try again");
+                }
+            }
+            if (quit != true && input != null)
+            {
+                Console.Clear();
+                int id = Convert.ToInt32(input);
+                bool run = true;
+                while (run)
+                {
+                    Console.WriteLine("What would you like to modify ? \n 1 - Amount \n 2 - Category");
+                    var userInput = Console.ReadLine();
+                    if(userInput == null || !userInput.All(char.IsDigit))
+                    {
+                        Console.Clear();
+                        continue;
+                    }
+                    run = false;
+                    switch (userInput)
+                    {                            
+                        case "1":
+                            await ModifyAmount(id);
+                            break;
+                        case "2":
+                            await ModifyCategory(id);
+                            break;
+                    }
+                }
+            }
+            else if (quit != true)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+            //Console.Clear();
         }
         public async Task RemoveTransaction()
         {
@@ -145,7 +203,6 @@ namespace BudgetTracker.Services
             {
                 Console.WriteLine("Please enter the transaction id you wish to remove or q to quit");
                 input = Console.ReadLine();
-                // Make sure the input is a number
                 if (input == "q" )
                 {
                     quit = true;
@@ -153,7 +210,15 @@ namespace BudgetTracker.Services
                 }
                 else if(input != null && input != "" && input.All(char.IsDigit))
                 {
-                    break;
+                    if(await transactionProcessor.TransactionExists(Convert.ToInt32(input)) == true)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Transaction not found. Please try again");
+                    }
                 }
                 else
                 {
@@ -180,6 +245,72 @@ namespace BudgetTracker.Services
                 throw new ArgumentNullException(nameof(input));
             }
             Console.Clear();
+        }
+        public async Task ModifyAmount(int id)
+        {
+            Console.Clear();
+            decimal amount;
+            while (true)
+            {
+                Console.WriteLine("Enter the new amount : ");
+                var resp = Console.ReadLine();
+                // Check if it's all digits. It also might contain a full stop / comma
+                if (resp != null && (resp.All(char.IsDigit) || resp.Contains(".") || resp.Contains(",")))
+                {
+                    // Convert response to a digit
+                    try
+                    {
+                        amount = Convert.ToDecimal(resp);
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Invalid input. Please try again");
+                    }
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("Invalid input. Please try again");
+                }
+            }
+            // Convert the task to a transaction
+            //Models.Transaction transaction = transactionProcessor.GetTransaction(id);
+            // Please make it call GetTransaction from the transactionProcessor
+            Models.Transaction transaction = await transactionProcessor.GetTransaction(id);
+            transaction.setAmount(amount);
+            await transactionProcessor.ModifyTransaction(transaction, id);
+            Console.Clear();
+        }
+        public async Task ModifyCategory(int id)
+        {
+            Console.Clear();
+            int catId = 0;
+            while (true)
+            {
+                Console.WriteLine("Enter the new category name : ");
+                var resp = Console.ReadLine();
+                // Check if it's all digits. It also might contain a full stop / comma
+                if (resp != null)
+                {
+                    // Convert response to a digit
+                    catId = transactionProcessor.GetCategoryIdOrCreate(resp).Result;
+                    break;
+                }
+                else
+                {
+                    Console.Clear();
+                    Console.WriteLine("Invalid input. Please try again");
+                }
+            }
+            // Convert the task to a transaction
+            //Models.Transaction transaction = transactionProcessor.GetTransaction(id);
+            // Please make it call GetTransaction from the transactionProcessor
+            Models.Transaction transaction = await transactionProcessor.GetTransaction(id);
+            transaction.SetCategory(catId);
+            await transactionProcessor.ModifyTransaction(transaction, id);
+            Console.ReadLine();
         }
     }
 }

@@ -70,7 +70,35 @@ namespace BudgetTracker.Services
                 CloseConnection();
             }
         }
-        public async Task ModifyTransaction(Models.Transaction transaction, int id)
+        public async Task<bool> TransactionExists(int id)
+        {
+            bool exists = false;
+            try
+            {
+                await OpenConnection();
+                using (SqlCommand command = new SqlCommand("SELECT * FROM Transactions WHERE Id = @Id", _connection))
+                {
+                    command.Parameters.AddWithValue("@Id", id);
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.HasRows)
+                        {
+                            exists = true;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while checking if transaction exists in the database : " + ex);
+            }
+            finally
+            {
+                CloseConnection();
+            }
+            return exists;
+        }
+        public async Task ModifyTransaction(Models.Transaction transaction, int id)     
         {
             // This method will modify transactions in mssql database
             string query = $"UPDATE Transactions SET Amount = '{transaction.Amount}', UserId = '{transaction.UserId}', TransactionDate = '{transaction.Date}', CategoryId = '{transaction.CategoryId}', BankId = '{transaction.BankId}' WHERE Id = '{id}'";
@@ -80,7 +108,7 @@ namespace BudgetTracker.Services
                 using (SqlCommand command = new SqlCommand(query, _connection))
                 {
                     await command.ExecuteNonQueryAsync();
-                    Console.Clear();
+                    //Console.Clear();
                     Console.WriteLine("Modified transaction!");
                 }
             }
@@ -159,8 +187,38 @@ namespace BudgetTracker.Services
             finally
             {
                 CloseConnection();
-            } 
+            }
             return returnId;
+        }
+        public async Task<Models.Transaction> GetTransaction(int id)
+        {
+            Models.Transaction transaction = new Models.Transaction(0, 0, 0, DateTime.Now, 0, 0);
+            try
+            {
+                await OpenConnection();
+                using (SqlCommand command = new SqlCommand("SELECT * FROM Transactions WHERE Id = @Id", _connection))
+                {
+                    command.Parameters.AddWithValue("@Id", id);
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.HasRows)
+                        {
+                            await reader.ReadAsync();
+                            transaction = new Models.Transaction(reader.GetInt32(0), reader.GetInt32(2), reader.GetDecimal(1), reader.GetDateTime(3), reader.GetInt32(4), reader.GetInt32(5));
+                        }
+                        else
+                        {
+                            Console.WriteLine("Transaction not found: ", id);
+                        }
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("UNABLE TO FIND TRANSACTION : " , e);
+            }
+
+            return transaction;
         }
         public async Task<List<Category>> GetCategories()
         {
@@ -190,6 +248,35 @@ namespace BudgetTracker.Services
             }
             return retCategories;
         }
+        public async Task<string>GetCategoryNameById(int id)
+        {
+            string retString = "";
+            try
+            {
+                await OpenConnection();
+                using (SqlCommand command = new SqlCommand("SELECT * FROM Categories WHERE Id = @Id", _connection))
+                {
+                    command.Parameters.AddWithValue("@Id", id);
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.HasRows)
+                        {
+                            await reader.ReadAsync();
+                            retString = reader.GetString(1);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Category not found: ", id);
+                        }
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("UNEXCPECTED EXCEPTION " + e);
+            }
+            return retString;
+        }
         public async Task<List<Models.Transaction>> GetTransactions(int userId)
         {
             // This method will get transactions from mssql database
@@ -208,8 +295,8 @@ namespace BudgetTracker.Services
                             decimal amount = reader.GetDecimal(1);
                             int uid = reader.GetInt32(2);
                             DateTime date = reader.GetDateTime(3);
-                            int categoryId = reader.GetInt32(2); 
-                            int bankId = reader.GetInt32(4);
+                            int categoryId = reader.GetInt32(4); 
+                            int bankId = reader.GetInt32(5);
                             retTransactions.Add(new Models.Transaction(id, uid ,amount, date, categoryId, bankId));
                         }
                     }

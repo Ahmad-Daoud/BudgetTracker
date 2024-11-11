@@ -22,7 +22,22 @@ namespace BudgetTracker.Models
             Date = transactionDate;
             CategoryId = categoryId;
             BankId = bankId;
-            Id = id;
+        }
+        public void SetCategory(int categoryId)
+        {
+            this.CategoryId = categoryId;
+        }
+        public void setAmount(decimal amount)
+        {
+            this.Amount = amount;
+        }
+        public void SetDate(DateTime date)
+        {
+            this.Date = date;
+        }
+        public void SetBank(int bankId)
+        {
+            this.BankId = bankId;
         }
     }
 }
