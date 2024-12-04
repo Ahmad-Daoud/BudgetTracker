@@ -255,6 +255,7 @@ namespace BudgetTracker.Services
                 Console.WriteLine("Enter the new amount : ");
                 var resp = Console.ReadLine();
                 // Check if it's all digits. It also might contain a full stop / comma
+                // TODO : fix to become resp.All(char.IsDigit || "." || ",") and make sure it contains only one comma/period 
                 if (resp != null && (resp.All(char.IsDigit) || resp.Contains(".") || resp.Contains(",")))
                 {
                     // Convert response to a digit
@@ -275,9 +276,7 @@ namespace BudgetTracker.Services
                     Console.WriteLine("Invalid input. Please try again");
                 }
             }
-            // Convert the task to a transaction
             //Models.Transaction transaction = transactionProcessor.GetTransaction(id);
-            // Please make it call GetTransaction from the transactionProcessor
             Models.Transaction transaction = await transactionProcessor.GetTransaction(id);
             transaction.setAmount(amount);
             await transactionProcessor.ModifyTransaction(transaction, id);
@@ -291,10 +290,9 @@ namespace BudgetTracker.Services
             {
                 Console.WriteLine("Enter the new category name : ");
                 var resp = Console.ReadLine();
-                // Check if it's all digits. It also might contain a full stop / comma
                 if (resp != null)
                 {
-                    // Convert response to a digit
+                    // Get category if it exists, create it if it doesn't
                     catId = transactionProcessor.GetCategoryIdOrCreate(resp).Result;
                     break;
                 }
@@ -304,9 +302,6 @@ namespace BudgetTracker.Services
                     Console.WriteLine("Invalid input. Please try again");
                 }
             }
-            // Convert the task to a transaction
-            //Models.Transaction transaction = transactionProcessor.GetTransaction(id);
-            // Please make it call GetTransaction from the transactionProcessor
             Models.Transaction transaction = await transactionProcessor.GetTransaction(id);
             transaction.SetCategory(catId);
             await transactionProcessor.ModifyTransaction(transaction, id);
